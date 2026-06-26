@@ -1,15 +1,6 @@
 /*
  * Calculadora de Numeros Grandes em C
  * ------------------------------------
- * Realiza operacoes aritmeticas (soma, subtracao, multiplicacao,
- * exponenciacao e fatorial) sobre numeros de precisao arbitraria,
- * representados como strings de caracteres.
- *
- * Como os tipos numericos nativos do C (int, double, etc.) tem limite
- * de tamanho, este programa trata os numeros como texto e implementa
- * os algoritmos de calculo manualmente, digito por digito, da mesma
- * forma que fazemos no papel.
- *
  * Bibliotecas utilizadas:
  *   stdio.h  - printf e scanf (entrada e saida no terminal)
  *   stdlib.h - malloc, realloc, free (gerenciamento de memoria) e atoi (string -> int)
@@ -23,79 +14,51 @@
 #include <ctype.h>
 
 
-/* =====================================================================
- * FUNCOES AUXILIARES DE MANIPULACAO DE STRING
- * ===================================================================== */
-
-/*
- * removeZeros: remove zeros desnecessarios no inicio de um numero.
- * Exemplo: "007" vira "7", "0.5" permanece "0.5" (o zero antes do
- * ponto nao e removido, pois e o unico digito restante).
- *
- * A funcao age diretamente na string recebida (modificacao in-place).
- */
+/* 
+  FUNCOES AUXILIARES DE MANIPULACAO DE STRING
+*/
 void removeZeros(char *s) {
     int i = 0;
 
     /* Avanca enquanto o caractere atual for '0' E ainda existir
-     * pelo menos um caractere depois dele (evita apagar o "0" isolado). */
+      pelo menos um caractere depois dele (evita apagar o "0" isolado). */
     while (s[i] == '0' && s[i+1] != '\0')
         i++;
-
     /* Se encontrou zeros para remover, desloca toda a string para a
-     * esquerda usando memmove (seguro mesmo com areas sobrepostas).
-     * O +1 no tamanho garante que o '\0' final tambem seja copiado. */
+      esquerda usando memmove (seguro mesmo com areas sobrepostas).
+      O +1 no tamanho garante que o '\0' final tambem seja copiado. */
     if (i > 0)
         memmove(s, s + i, strlen(s) - i + 1);
 }
-
-
 /*
- * casasDecimais: retorna quantos digitos existem apos o ponto decimal.
- * Exemplo: "3.14"  -> 2  |  "100" -> 0  |  "0.001" -> 3
+  casasDecimais: retorna quantos digitos existem apos o ponto decimal.
  */
 int casasDecimais(char *s) {
     /* Procura o primeiro '.' na string. */
     char *p = strchr(s, '.');
-
     /* Se nao houver ponto, o numero e inteiro: 0 casas decimais. */
     if (p == NULL)
         return 0;
-
     /* p aponta para o '.'; p+1 aponta para o primeiro digito decimal.
-     * strlen(p+1) conta quantos caracteres ha apos o ponto. */
+      strlen(p+1) conta quantos caracteres ha apos o ponto. */
     return strlen(p + 1);
 }
 
-
 /*
- * removePonto: retira o ponto decimal da string, transformando o
- * numero em um inteiro (ex.: "3.14" -> "314").
- *
- * Isso e util para que as operacoes aritmeticas trabalhem apenas com
- * inteiros; o ponto e reinserido no resultado final por colocaPonto().
- */
+  removePonto: retira o ponto decimal da string, transformando o
+  numero em um inteiro.
+*/
 void removePonto(char *s) {
     char *p = strchr(s, '.');
-
     /* Se houver ponto, sobrescreve-o deslocando tudo que vem depois
-     * uma posicao para a esquerda (incluindo o '\0'). */
+      uma posicao para a esquerda (incluindo o '\0'). */
     if (p != NULL)
         memmove(p, p + 1, strlen(p));
 }
-
-
 /*
- * colocaPonto: insere o ponto decimal na posicao correta de um numero
- * inteiro (representado como string), de acordo com a quantidade de
- * casas decimais desejadas.
- *
- * Exemplos:
- *   colocaPonto("314", 2)  -> "3.14"
- *   colocaPonto("5",   3)  -> "0.005"   (numero menor que 1)
- *
- * ATENCAO: esta funcao libera a string original (s) e retorna um
- * novo ponteiro alocado com malloc. Nao use 's' apos chamar esta funcao.
+  colocaPonto: insere o ponto decimal na posicao correta de um numero
+  inteiro (representado como string), de acordo com a quantidade de
+  casas decimais desejadas.
  */
 char *colocaPonto(char *s, int casas) {
 
@@ -106,18 +69,14 @@ char *colocaPonto(char *s, int casas) {
     int tam = strlen(s);
 
     /* Caso especial: o numero de digitos e menor ou igual ao numero de
-     * casas decimais, logo o resultado e menor que 1 (ex.: 5 com 3 casas
-     * decimais vira "0.005"). */
+      casas decimais, logo o resultado e menor que 1  */
     if (tam <= casas) {
-        /* Precisamos de: "0." + zeros de preenchimento + digitos + '\0'
-         * Exemplo: tam=1, casas=3 -> "0." + "00" + "5" -> 6 chars + '\0' */
+        /* Precisamos de: "0." + zeros de preenchimento + digitos + '\0'*/
         char *r = malloc(casas + 3);
-
         r[0] = '0';
         r[1] = '.';
-
         /* Calcula quantos zeros de preenchimento sao necessarios entre
-         * o ponto e os digitos significativos. */
+          o ponto e os digitos significativos. */
         int zeros = casas - tam;
 
         for (int i = 0; i < zeros; i++)
@@ -130,8 +89,7 @@ char *colocaPonto(char *s, int casas) {
         return r;
     }
 
-    /* Caso normal: separa a parte inteira da parte decimal com um ponto.
-     * Exemplo: "314" com 2 casas -> "3.14" */
+    /* Caso normal: separa a parte inteira da parte decimal com um ponto. */
     char *r = malloc(tam + 2); /* +2: espaco para o '.' e o '\0' */
 
     /* Copia os digitos da parte inteira (os primeiros tam-casas digitos). */
@@ -148,25 +106,23 @@ char *colocaPonto(char *s, int casas) {
 }
 
 
-/* =====================================================================
- * COMPARACAO DE NUMEROS INTEIROS POSITIVOS (SEM SINAL, SEM PONTO)
- * ===================================================================== */
+/*  COMPARACAO DE NUMEROS INTEIROS POSITIVOS (SEM SINAL, SEM PONTO) */
 
 /*
- * compara: compara dois numeros inteiros positivos representados como strings.
- * Retorna:
- *   1  se a > b
- *  -1  se a < b
- *   0  se a == b
- *
- * Estrategia: primeiro compara pelo numero de digitos (mais digitos = maior).
- * Se tiverem o mesmo tamanho, compara lexicograficamente (funciona porque
- * os digitos estao em ordem crescente de '0' a '9' na tabela ASCII).
+  compara: compara dois numeros inteiros positivos representados como strings.
+  Retorna:
+    1  se a > b
+   -1  se a < b
+    0  se a == b
+ 
+  Estrategia: primeiro compara pelo numero de digitos (mais digitos = maior).
+  Se tiverem o mesmo tamanho, compara lexicograficamente (funciona porque
+  os digitos estao em ordem crescente de '0' a '9' na tabela ASCII).
  */
 int compara(char *a, char *b) {
 
     /* Cria copias para nao alterar as strings originais, pois
-     * removeZeros modifica a string diretamente. */
+      removeZeros modifica a string diretamente. */
     char *aa = malloc(strlen(a) + 1);
     char *bb = malloc(strlen(b) + 1);
 
@@ -200,20 +156,18 @@ int compara(char *a, char *b) {
 }
 
 
-/* =====================================================================
- * OPERACOES SOBRE INTEIROS (SEM PONTO DECIMAL, SEM SINAL NEGATIVO)
- * ===================================================================== */
+/*OPERACOES SOBRE INTEIROS (SEM PONTO DECIMAL, SEM SINAL NEGATIVO) */
 
 /*
- * somaInteiros: soma dois numeros inteiros positivos representados como
- * strings e retorna o resultado em uma nova string alocada dinamicamente.
- *
- * Algoritmo: replica a soma "de baixo para cima" que fazemos no papel.
- *   - Percorre os dois numeros da direita para a esquerda (do menor para
- *     o maior digito).
- *   - Soma os digitos correspondentes mais o "vai-um" (carry).
- *   - Guarda os digitos do resultado em ordem invertida num vetor auxiliar.
- *   - Ao final, inverte o vetor para obter o resultado na ordem correta.
+  somaInteiros: soma dois numeros inteiros positivos representados como
+  strings e retorna o resultado em uma nova string alocada dinamicamente.
+ 
+  Algoritmo: replica a soma "de baixo para cima" que fazemos no papel.
+    - Percorre os dois numeros da direita para a esquerda (do menor para
+     o maior digito).
+    - Soma os digitos correspondentes mais o "vai-um" (carry).
+    - Guarda os digitos do resultado em ordem invertida num vetor auxiliar.
+    - Ao final, inverte o vetor para obter o resultado na ordem correta.
  */
 char *somaInteiros(char *a, char *b) {
     int i = strlen(a) - 1; /* Indice do ultimo digito de a. */
@@ -222,14 +176,14 @@ char *somaInteiros(char *a, char *b) {
     int pos = 0;            /* Posicao atual no vetor de resultado invertido. */
 
     /* O resultado pode ter no maximo max(len_a, len_b) + 1 digitos
-     * (o +1 e para um possivel carry final). */
+      (o +1 e para um possivel carry final). */
     int tam = (strlen(a) > strlen(b)) ? strlen(a) + 1 : strlen(b) + 1;
 
     /* Vetor auxiliar que armazenara os digitos em ordem INVERTIDA. */
     char *aux = malloc((tam + 1) * sizeof(char));
 
     /* Continua enquanto ainda houver digitos em algum dos numeros
-     * ou ainda existir um carry a ser processado. */
+     ou ainda existir um carry a ser processado. */
     while (i >= 0 || j >= 0 || vai) {
         int x = (i >= 0) ? (a[i] - '0') : 0; /* Digito atual de a (ou 0 se esgotou). */
         int y = (j >= 0) ? (b[j] - '0') : 0; /* Digito atual de b (ou 0 se esgotou). */
@@ -257,18 +211,17 @@ char *somaInteiros(char *a, char *b) {
 
 /*
  * subtracaoInteiro: subtrai dois numeros inteiros positivos (a - b),
- * podendo retornar um resultado negativo caso b > a.
- *
- * Algoritmo: semelhante a subtrai??o no papel.
- *   - Se b > a, troca os operandos e marca o resultado como negativo.
- *   - Percorre da direita para a esquerda, subtraindo digito a digito.
- *   - Usa "emprestimo" quando o digito de 'a' e menor que o de 'b'.
+  podendo retornar um resultado negativo caso b > a.
+  Algoritmo: semelhante a subtrai??o no papel.
+    - Se b > a, troca os operandos e marca o resultado como negativo.
+    - Percorre da direita para a esquerda, subtraindo digito a digito.
+    - Usa "emprestimo" quando o digito de 'a' e menor que o de 'b'.
  */
 char *subtracaoInteiro(char *a, char *b) {
     int neg = 0; /* Flag: 1 se o resultado for negativo. */
 
     /* Se a < b, a subtracao resultaria em negativo.
-     * Estrategia: calcula b - a e coloca o sinal '-' no resultado. */
+      Estrategia: calcula b - a e coloca o sinal '-' no resultado. */
     if (strlen(a) < strlen(b) ||
        (strlen(a) == strlen(b) && strcmp(a, b) < 0)) {
         char *t = a; a = b; b = t; /* Troca a e b. */
@@ -290,8 +243,8 @@ char *subtracaoInteiro(char *a, char *b) {
         int y = (j >= 0) ? (b[j] - '0') : 0;
 
         /* Se o digito de a (apos emprestimo) for menor que o de b,
-         * "pede emprestado" da casa a esquerda: adiciona 10 ao digito
-         * e sinaliza que a proxima etapa tera um emprestimo. */
+         "pede emprestado" da casa a esquerda: adiciona 10 ao digito
+          e sinaliza que a proxima etapa tera um emprestimo. */
         if (x < y) {
             x  += 10;
             emp = 1;
@@ -305,7 +258,7 @@ char *subtracaoInteiro(char *a, char *b) {
     }
 
     /* Remove zeros a esquerda que possam ter ficado no resultado invertido
-     * (ex.: 100 - 99 = 001 invertido deve virar 1). */
+      (ex.: 100 - 99 = 001 invertido deve virar 1). */
     while (pos > 1 && aux[pos - 1] == '0')
         pos--;
 
@@ -326,22 +279,18 @@ char *subtracaoInteiro(char *a, char *b) {
 }
 
 
-/* =====================================================================
- * OPERACOES PRINCIPAIS (COM SUPORTE A SINAL E DECIMAIS)
- * ===================================================================== */
+/* OPERACOES PRINCIPAIS (COM SUPORTE A SINAL E DECIMAIS)*/
 
 /*
- * soma: soma dois numeros quaisquer (positivos, negativos, com ou sem
- * casas decimais). Trata o sinal antes de delegar para somaInteiros().
- *
- * Regras de sinal aplicadas:
- *   (-a) + b   =  b - a
- *    a  + (-b) =  a - b
- *   (-a) + (-b) = -(a + b)
- *
- * Para numeros com decimais: antes de somar, alinha as casas decimais
- * completando com zeros a direita o numero que tiver menos casas.
- * Exemplo: 1.5 + 2.25 -> remove pontos -> 150 + 225 -> soma -> recoloca ponto.
+  soma: soma dois numeros quaisquer (positivos, negativos, com ou sem
+  casas decimais). Trata o sinal antes de delegar para somaInteiros().
+ Regras de sinal aplicadas:
+    (-a) + b   =  b - a
+     a  + (-b) =  a - b
+    (-a) + (-b) = -(a + b)
+ 
+  Para numeros com decimais: antes de somar, alinha as casas decimais
+  completando com zeros a direita o numero que tiver menos casas.
  */
 char *soma(char *a, char *b) {
 
@@ -381,9 +330,8 @@ char *soma(char *a, char *b) {
     removePonto(bb);
 
     /* Completa com zeros a direita o numero com menos casas decimais,
-     * para que ambos fiquem com o mesmo "peso" decimal.
-     * Exemplo: 1.5 e 2.25 -> "15" e "225" ficam desalinhados.
-     * Corrigindo: "150" e "225" (ambos representam duas casas decimais). */
+      para que ambos fiquem com o mesmo "peso" decimal.
+      Corrigindo: "150" e "225" (ambos representam duas casas decimais). */
     while (c1 < casas) { strcat(aa, "0"); c1++; }
     while (c2 < casas) { strcat(bb, "0"); c2++; }
 
@@ -399,20 +347,16 @@ char *soma(char *a, char *b) {
 }
 
 
-/*
- * subtracao: subtrai dois numeros quaisquer (a - b), com suporte a
- * negativos e casas decimais.
- *
- * Regras de sinal aplicadas:
- *   (-a) - (-b) =  b - a
- *   (-a) -  b   = -(a + b)
- *    a  - (-b)  =  a + b
- *
- * Para numeros com decimais, o alinhamento e feito da mesma forma que
- * na soma: completa com zeros e trabalha com inteiros internamente.
- *
- * Detalhe: se o resultado for negativo, o ponto decimal precisa ser
- * reinserido apos o sinal '-', nao antes (ex.: "-0.05", nao "-.005").
+/* subtracao: subtrai dois numeros quaisquer (a - b), com suporte a
+ negativos e casas decimais.
+  Regras de sinal aplicadas:
+   (-a) - (-b) =  b - a
+    (-a) -  b   = -(a + b)
+   a  - (-b)  =  a + b
+  Para numeros com decimais, o alinhamento e feito da mesma forma que
+  na soma: completa com zeros e trabalha com inteiros internamente.
+  Detalhe: se o resultado for negativo, o ponto decimal precisa ser
+  reinserido apos o sinal '-', nao antes (ex.: "-0.05", nao "-.005").
  */
 char *subtracao(char *a, char *b) {
 
@@ -457,8 +401,8 @@ char *subtracao(char *a, char *b) {
     free(bb);
 
     /* Se o resultado for negativo, e preciso reinserir o ponto decimal
-     * apos o sinal '-'. Exemplo: resultado interno "-5" com 2 casas
-     * decimais deve se tornar "-0.05", nao "-.05". */
+      apos o sinal '-'. Exemplo: resultado interno "-5" com 2 casas
+     decimais deve se tornar "-0.05", nao "-.05". */
     if (r[0] == '-') {
         char *tmp = malloc(strlen(r)); /* strlen(r) sem o '-' + '\0' */
         strcpy(tmp, r + 1);           /* Copia a parte numerica sem o sinal. */
@@ -480,19 +424,18 @@ char *subtracao(char *a, char *b) {
 
 
 /*
- * multiplicacao: multiplica dois numeros quaisquer (positivos, negativos,
- * com ou sem casas decimais).
- *
- * Algoritmo (multiplicacao longa, como no papel):
- *   1. Remove os sinais e determina se o resultado sera negativo
- *      (negativo se exatamente um dos fatores for negativo).
- *   2. Conta as casas decimais totais (soma das casas dos dois fatores).
- *   3. Remove os pontos e trabalha com inteiros.
- *   4. Para cada digito de bb (da direita para a esquerda):
- *      - Calcula o produto parcial: soma aa, d vezes (onde d e o digito).
- *      - Adiciona os zeros de deslocamento correspondentes a posicao do digito.
- *      - Acumula o produto parcial no resultado total.
- *   5. Reinsere o ponto decimal e o sinal no resultado.
+  multiplicacao: multiplica dois numeros quaisquer (positivos, negativos,
+  com ou sem casas decimais).
+  Algoritmo (multiplicacao longa, como no papel):
+    1. Remove os sinais e determina se o resultado sera negativo
+       (negativo se exatamente um dos fatores for negativo).
+   2. Conta as casas decimais totais (soma das casas dos dois fatores).
+    3. Remove os pontos e trabalha com inteiros.
+   4. Para cada digito de bb (da direita para a esquerda):
+      - Calcula o produto parcial: soma aa, d vezes (onde d e o digito).
+      - Adiciona os zeros de deslocamento correspondentes a posicao do digito.
+      - Acumula o produto parcial no resultado total.
+    5. Reinsere o ponto decimal e o sinal no resultado.
  */
 char *multiplicacao(char *a, char *b) {
 
@@ -505,12 +448,12 @@ char *multiplicacao(char *a, char *b) {
     strcpy(bb, b);
 
     /* Remove sinais e conta quantos havia.
-     * Regra: neg impar -> resultado negativo; neg par -> resultado positivo. */
+      Regra: neg impar -> resultado negativo; neg par -> resultado positivo. */
     if (aa[0] == '-') { neg++; memmove(aa, aa + 1, strlen(aa)); }
     if (bb[0] == '-') { neg++; memmove(bb, bb + 1, strlen(bb)); }
 
     /* A quantidade de casas decimais do produto e a soma das casas dos fatores.
-     * Exemplo: 1.5 * 2.25 -> 1 + 2 = 3 casas decimais -> resultado tem 3 casas. */
+     Exemplo: 1.5 * 2.25 -> 1 + 2 = 3 casas decimais -> resultado tem 3 casas. */
     int casas = casasDecimais(aa) + casasDecimais(bb);
 
     /* Remove os pontos: trabalhamos apenas com inteiros na multiplicacao. */
@@ -529,7 +472,7 @@ char *multiplicacao(char *a, char *b) {
         int d = bb[i] - '0'; /* Digito atual de bb convertido para inteiro. */
 
         /* Produto parcial de aa pelo digito d: soma aa d vezes.
-         * (Equivale a aa * d, mas usando apenas a funcao somaInteiros.) */
+          (Equivale a aa * d, mas usando apenas a funcao somaInteiros.) */
         char *parcial = malloc(2);
         strcpy(parcial, "0");
 
@@ -540,10 +483,8 @@ char *multiplicacao(char *a, char *b) {
         }
 
         /* Aplica o deslocamento: o digito na posicao i conta da direita,
-         * entao seu produto parcial deve ser "deslocado" tamB-i-1 casas
-         * para a esquerda, o que equivale a adicionar zeros a direita.
-         * Exemplo: aa=12, bb=34 -> 12*4 (posicao 0, desloc=0) + 12*3 (posicao 1, desloc=1)
-         *          -> parcial de 3 = "36", com desloc 1 -> "360". */
+         entao seu produto parcial deve ser "deslocado" tamB-i-1 casas
+          para a esquerda, o que equivale a adicionar zeros a direit. */
         int desloc = tamB - i - 1;
         int t = strlen(parcial);
 
@@ -581,15 +522,14 @@ char *multiplicacao(char *a, char *b) {
 
 
 /*
- * exponenciacao: calcula a^e, onde e e um expoente inteiro nao-negativo.
- *
+ exponenciacao: calcula a^e, onde e e um expoente inteiro nao-negativo.
+ 
  * Limitacoes:
- *   - O expoente deve ser um inteiro (nao aceita 2.5, por exemplo).
- *   - Expoentes negativos nao sao suportados.
- *
- * Algoritmo: multiplicacao repetida (a * a * a ... e vezes).
- * Comeca com resultado = 1 e multiplica pela base e vezes.
- * Caso especial: qualquer numero elevado a 0 e 1.
+   - O expoente deve ser um inteiro (nao aceita 2.5, por exemplo).
+   - Expoentes negativos nao sao suportados.
+  Algoritmo: multiplicacao repetida (a * a * a ... e vezes).
+  Comeca com resultado = 1 e multiplica pela base e vezes.
+  Caso especial: qualquer numero elevado a 0 e 1.
  */
 char *exponenciacao(char *a, char *b) {
 
@@ -620,15 +560,14 @@ char *exponenciacao(char *a, char *b) {
 
 
 /*
- * fatorial: calcula n! = 1 * 2 * 3 * ... * n.
- *
+  fatorial: calcula n! = 1 * 2 * 3 * ... * n.
+ 
  * Limitacoes:
- *   - Nao aceita numeros negativos (fatorial nao e definido).
- *   - Nao aceita numeros reais (fatorial so e definido para inteiros).
- *
- * Algoritmo: multiplicacao acumulada de 2 ate n.
- * Comeca com resultado = 1 e multiplica por cada inteiro de 2 ate n.
- * Caso especial: 0! = 1.
+    - Nao aceita numeros negativos (fatorial nao e definido).
+    - Nao aceita numeros reais (fatorial so e definido para inteiros).
+  Algoritmo: multiplicacao acumulada de 2 ate n.
+  Comeca com resultado = 1 e multiplica por cada inteiro de 2 ate n.
+  Caso especial: 0! = 1.
  */
 char *fatorial(char *a) {
 
@@ -665,18 +604,15 @@ char *fatorial(char *a) {
 }
 
 
-/* =====================================================================
- * AVALIACAO DE EXPRESSOES (ex.: "3+5*2^4")
- * ===================================================================== */
+/* AVALIACAO DE EXPRESSOES */
 
 /*
- * precedencia: retorna o nivel de prioridade de um operador.
- *
- * Prioridades definidas:
- *   '^' (exponenciacao) = 3  (maior prioridade)
- *   '*' (multiplicacao) = 2
- *   '+' e '-' (soma e subtracao) = 1  (menor prioridade)
- *   qualquer outro = 0 (invalido)
+precedencia: retorna o nivel de prioridade de um operador.
+  Prioridades definidas:
+   '^' (exponenciacao) = 3  (maior prioridade)
+    '*' (multiplicacao) = 2
+    '+' e '-' (soma e subtracao) = 1  (menor prioridade)
+    qualquer outro = 0 (invalido)
  */
 int precedencia(char op) {
     if (op == '^') return 3;
@@ -687,9 +623,9 @@ int precedencia(char op) {
 
 
 /*
- * calcular: aplica o operador 'op' sobre os operandos 'a' e 'b' e
- * retorna o resultado. Funciona como um despachante para as funcoes
- * de cada operacao.
+  calcular: aplica o operador 'op' sobre os operandos 'a' e 'b' e
+ retorna o resultado. Funciona como um despachante para as funcoes
+ de cada operacao.
  */
 char *calcular(char *a, char *b, char op) {
     if (op == '+') return soma(a, b);
@@ -701,21 +637,17 @@ char *calcular(char *a, char *b, char op) {
 
 
 /*
- * expressao: avalia uma expressao matematica fornecida como string
- * (ex.: "3+5*2^4"), respeitando a precedencia dos operadores.
- *
- * Algoritmo: Shunting-Yard simplificado com duas pilhas.
- *   - Pilha de valores  (valores[]): armazena os numeros lidos.
- *   - Pilha de operadores (ops[]): armazena os operadores pendentes.
- *
- * Regra ao encontrar um operador novo:
- *   Antes de empilhar o operador atual, resolve todos os operadores
- *   na pilha que tenham precedencia maior ou igual ao operador atual.
- *   Isso garante que "*" seja calculado antes de "+", por exemplo.
- *
- * Ao final da expressao, resolve todos os operadores restantes na pilha.
- *
- * Limitacao: nao suporta parenteses nesta implementacao.
+  expressao: avalia uma expressao matematica fornecida como string
+  respeitando a precedencia dos operadores.
+  Algoritmo: Shunting-Yard simplificado com duas pilhas.
+    - Pilha de valores  (valores[]): armazena os numeros lidos.
+    - Pilha de operadores (ops[]): armazena os operadores pendentes.
+  Regra ao encontrar um operador novo:
+    Antes de empilhar o operador atual, resolve todos os operadores
+  na pilha que tenham precedencia maior ou igual ao operador atual.
+    Isso garante que "*" seja calculado antes de "+", por exemplo.
+ Ao final da expressao, resolve todos os operadores restantes na pilha.
+ Limitacao: nao suporta parenteses nesta implementacao.
  */
 char *expressao(char *o) {
 
@@ -750,8 +682,8 @@ char *expressao(char *o) {
         char op = o[i];
 
         /* Antes de empilhar o operador atual, desempilha e calcula todos
-         * os operadores no topo da pilha que tenham precedencia >= ao atual.
-         * Isso garante a ordem correta de avaliacao (ex.: * antes de +). */
+          os operadores no topo da pilha que tenham precedencia >= ao atual.
+         Isso garante a ordem correta de avaliacao (ex.: * antes de +). */
         while (topoO >= 0 && precedencia(ops[topoO]) >= precedencia(op)) {
             char  operador = ops[topoO--];      /* Desempilha operador. */
             char *b_val    = valores[topoV--];  /* Segundo operando (mais recente). */
@@ -789,7 +721,7 @@ char *expressao(char *o) {
 
 
 /* =====================================================================
- * FUNCAO PRINCIPAL
+  FUNCAO PRINCIPAL
  * ===================================================================== */
 
 int main() {
