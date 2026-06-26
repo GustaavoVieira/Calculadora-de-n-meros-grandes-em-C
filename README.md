@@ -1,16 +1,16 @@
-# 🧮 Calculadora de Números Grandes em C
+#  Calculadora de Números Grandes em C
 
 Calculadora de precisão arbitrária implementada em C, capaz de realizar operações aritméticas com números inteiros e decimais de qualquer tamanho — sem as limitações dos tipos numéricos nativos da linguagem.
 
 ---
 
-## 💡 Motivação
+##  Motivação
 
 Os tipos numéricos do C (`int`, `long`, `double`) têm um limite fixo de tamanho. Um `long long`, por exemplo, suporta apenas até ~9,2 × 10¹⁸. Já esta calculadora representa os números como **strings de caracteres** e implementa os algoritmos de cálculo manualmente, digito a digito, da mesma forma que fazemos no papel — sem limite de tamanho.
 
 ---
 
-## ✨ Funcionalidades
+##  Funcionalidades
 
 | Operação | Suporte |
 |---|---|
@@ -23,21 +23,7 @@ Os tipos numéricos do C (`int`, `long`, `double`) têm um limite fixo de tamanh
 
 ---
 
-## 🚀 Como compilar e executar
-
-**Pré-requisito:** GCC instalado.
-
-```bash
-# Compilar
-gcc calculadora.c -o calculadora
-
-# Executar
-./calculadora
-```
-
----
-
-## 🖥️ Exemplo de uso
+##  Exemplo de uso
 
 ```
 === CALCULADORA DE NUMEROS GRANDES ===
@@ -67,7 +53,7 @@ Resultado: 1039
 
 ---
 
-## 🏗️ Estrutura do código
+##  Estrutura do código
 
 ```
 calculadora.c
@@ -102,7 +88,7 @@ calculadora.c
 
 ---
 
-## ⚙️ Como funciona internamente
+##  Como funciona internamente
 
 ### Aritmética em string
 
@@ -118,15 +104,9 @@ Utiliza o algoritmo **Shunting-Yard** simplificado com duas pilhas: uma para nú
 
 ---
 
-## ⚠️ Limitações conhecidas
+##  Limitações conhecidas
 
 - Expressões **não suportam parênteses**.
 - O **expoente** da exponenciação precisa ser um inteiro não-negativo.
 - O **fatorial** aceita apenas inteiros não-negativos.
 - A multiplicação usa somas repetidas por dígito, o que pode ser lento para números muito grandes com muitos dígitos decimais.
-
----
-
-## 📄 Licença
-
-Este projeto está sob a licença MIT. Sinta-se livre para usar, modificar e distribuir.
